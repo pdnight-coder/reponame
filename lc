@@ -1,0 +1,13 @@
+module lc(
+input  clk, dl,
+input [1:0] cf,rf,
+output reg m,u,d,b
+);
+always@(posedge clk)
+begin
+if (dl<=0)begin m=0;b=1;d=0;u=0; end
+else if (cf>rf)begin m=1;b=0;d=1;u=0; end
+else if (cf<rf)begin m=1;b=0;d=0;u=1; end
+else begin m=0;b=0;d=0;u=0; end
+end 
+endmodule
