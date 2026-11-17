@@ -1,0 +1,89 @@
+
+module washing_machine_controller #( parameter integer CLK_FREQ = 50_000_000, parameter integer SOAK_TIME = 5, parameter integer WASH_TIME = 20, parameter integer RINSE_TIME = 10, parameter integer SPIN_TIME = 15
+)(
+input wire clk, input wire reset, input wire start, input wire d_wash,
+output reg soak, output reg wash, output reg rinse, output reg spin, output reg done
+);
+localparam IDLE = 4'd0; localparam SOAK = 4'd1; localparam WASH = 4'd2; localparam RINSE = 4'd3; localparam WASH2 = 4'd4; localparam RINSE2 = 4'd5; localparam SPIN = 4'd6; localparam DONE = 4'd7;
+reg [3:0] state, next_state; reg [31:0] clk_count;
+reg one_sec_tick;
+reg [31:0] timer_count;
+// One-second tick generator
+always @(posedge clk or posedge reset) begin if (reset) begin
+clk_count <= 0;
+one_sec_tick <= 0; end
+else if (clk_count == CLK_FREQ - 1) begin clk_count <= 0;
+one_sec_tick <= 1; end
+else begin
+clk_count <= clk_count + 1'b1; one_sec_tick <= 0;
+end end
+// Timer counter
+always @(posedge clk or posedge reset) begin if (reset)
+timer_count <= 0;
+else if (state != next_state) timer_count <= 0;
+else if (one_sec_tick)
+timer_count <= timer_count + 1'b1;
+end
+// State register
+always @(posedge clk or posedge reset) begin if (reset)
+state <= IDLE; else
+state <= next_state;
+end
+// Next-state logic always @(*) begin
+next_state = state; case (state)
+IDLE: begin if (start)
+next_state = SOAK;
+end
+SOAK: begin
+if (timer_count >= SOAK_TIME) next_state = WASH;
+end
+WASH: begin
+if (timer_count >= WASH_TIME) next_state = RINSE;
+end
+RINSE: begin
+if (timer_count >= RINSE_TIME) begin if (d_wash)
+next_state = WASH2; else
+next_state = SPIN;
+end end
+WASH2: begin
+if (timer_count >= WASH_TIME) next_state = RINSE2;
+end
+RINSE2: begin
+if (timer_count >= RINSE_TIME) next_state = SPIN;
+end
+SPIN: begin
+if (timer_count >= SPIN_TIME) next_state = DONE;
+end
+DONE: begin next_state = IDLE;
+end
+default: begin next_state = IDLE;
+end
+endcase end
+// Output logic always @(*) begin
+soak = 0;
+wash = 0;
+rinse = 0;
+spin = 0;
+done = 0;
+case (state)
+SOAK: begin soak = 1;
+end
+WASH: begin wash = 1;
+end
+RINSE: begin rinse = 1;
+end
+WASH2: begin wash = 1;
+end
+RINSE2: begin rinse = 1;
+end
+SPIN: begin spin = 1;
+end
+DONE: begin done = 1;
+end
+default: begin soak = 0;
+wash = 0;
+rinse = 0;
+spin = 0;
+done = 0; end
+endcase end
+endmodule
