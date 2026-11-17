@@ -1,0 +1,39 @@
+module washing_machine_controller_tb; 
+reg clk;
+reg reset; reg start; reg d_wash;
+wire soak; wire wash; wire rinse; wire spin; wire done;
+washing_machine_controller #(
+.CLK_FREQ(4),
+.SOAK_TIME(1),
+.WASH_TIME(2),
+.RINSE_TIME(1),
+.SPIN_TIME(3)
+) uut (
+.clk(clk),
+.reset(reset),
+.start(start),
+.d_wash(d_wash),
+.soak(soak),
+.wash(wash),
+.rinse(rinse),
+.spin(spin),
+.done(done)
+);
+always #5 clk = ~clk;
+initial begin clk = 0;
+reset = 1;
+start = 0;
+d_wash = 0;
+repeat (2) @(negedge clk); reset = 0;
+@(negedge clk); start = 1;
+@(negedge clk); start = 0;
+wait(done == 1);
+repeat (2) @(negedge clk); reset = 1;
+@(negedge clk); reset = 0;
+d_wash = 1;
+@(negedge clk); start = 1;
+@(negedge clk); start = 0;
+wait(done == 1);
+#20;
+$finish; end
+endmodule
