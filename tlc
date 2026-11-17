@@ -1,0 +1,145 @@
+`timescale 1ns / 1ps
+module traffic_light_controller #(
+parameter integer CLK_FREQ = 50000000
+)(
+input wire clk,
+input wire reset,
+input wire farm_car,
+output reg R1,
+output reg Y1,
+output reg G1,
+output reg R2,
+output reg Y2,
+output reg G2
+);
+reg [1:0] state;
+reg [31:0] count;
+localparam S0 = 2'b00;
+localparam S1 = 2'b01;
+localparam S2 = 2'b10;
+localparam S3 = 2'b11;
+localparam integer TIME_32 = 2 * CLK_FREQ;
+localparam integer TIME_4 = 1 * CLK_FREQ;
+localparam integer BLINK_HALF_PERIOD = CLK_FREQ / 4;
+reg [31:0] blink_count;
+reg blink;
+always @(posedge clk or posedge reset)
+begin
+if (reset)
+begin
+blink_count <= 0;
+blink <= 1'b1;
+end
+else if (blink_count >= BLINK_HALF_PERIOD - 1) begin
+blink_count <= 0;
+blink <= ~blink;
+end
+else
+blink_count <= blink_count + 1; end
+always @(posedge clk or posedge reset) begin
+if (reset)
+begin
+state <= S0;
+count <= 0;
+end
+else if (farm_car)
+begin
+state <= S0;
+count <= 0;
+end
+else
+begin
+case (state)
+S0:
+begin
+if (count >= TIME_32 - 1)
+begin
+state <= S1;
+count <= 0;
+end
+else
+count <= count + 1;
+end
+S1:
+begin
+if (count >= TIME_4 - 1)
+begin
+state <= S2;
+count <= 0;
+end
+else
+count <= count + 1;
+end
+S2:
+begin
+if (count >= TIME_32 - 1)
+begin
+state <= S3;
+count <= 0;
+end
+else
+count <= count + 1;
+end
+S3:
+begin
+if (count >= TIME_4 - 1)
+begin
+state <= S0;
+count <= 0;
+end
+else
+count <= count + 1;
+end
+default:
+begin
+state <= S0;
+count <= 0;
+end
+endcase
+end
+end
+always @(*)
+begin
+R1 = 0;
+Y1 = 0;
+G1 = 0;
+R2 = 0;
+Y2 = 0;
+G2 = 0;
+if (farm_car)
+begin
+R1 = 1;
+G2 = 1;
+end
+else
+begin
+case (state)
+S0:
+begin
+R1 = 1;
+G2 = 1;
+end
+S1:
+begin
+R1 = 1;
+Y2 = blink;
+end
+S2:
+begin
+G1 = 1;
+R2 = 1;
+end
+S3:
+begin
+Y1 = blink;
+R2 = 1;
+end
+default:
+begin
+R1 = 1;
+R2 = 1;
+end
+endcase
+end
+end
+endmodule
