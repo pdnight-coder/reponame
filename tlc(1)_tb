@@ -1,0 +1,65 @@
+`timescale 1ns / 1ps
+
+module tb_traffic_light_controller;
+
+    // Inputs
+    reg clk;
+    reg reset;
+    reg farm_car;
+
+    // Outputs
+    wire R1, Y1, G1;
+    wire R2, Y2, G2;
+
+    // DUT instantiation
+    traffic_light_controller #(
+        .CLK_FREQ(10)
+    ) DUT (
+        .clk(clk),
+        .reset(reset),
+        .farm_car(farm_car),
+
+        .R1(R1),
+        .Y1(Y1),
+        .G1(G1),
+
+        .R2(R2),
+        .Y2(Y2),
+        .G2(G2)
+    );
+
+    // Clock generation
+    initial
+    begin
+        clk = 0;
+        forever
+            #5 clk = ~clk;
+    end
+
+    // Test sequence
+    initial
+    begin
+        reset = 1;
+        farm_car = 0;
+
+        // Reset HIGH for 20 ns
+        #20;
+        reset = 0;
+
+        // Normal traffic operation
+        #800;
+
+        // Farm car detected
+        farm_car = 1;
+
+        #200;
+
+        // Farm car leaves
+        farm_car = 0;
+
+        #300;
+
+        $finish;
+    end
+
+endmodule
